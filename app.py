@@ -1,23 +1,4 @@
 
-Gemini와의 대화
-주제는 알람앱이야. (다른 주제로도 바꿔도 됨)
-
-모델은 gemini-2.5-flash-lite 사용
-
-API 키는 secrets로 불러오기
-
-채팅 기록 유지, 오류 처리 포함
-
-app.py랑 requirements.txt 내용 알려줘
-
-Secrets에 넣을 키 형식도 알려줘
-
-Streamlit과 google-genai SDK를 사용하여 Gemini 2.5 Flash Lite 모델 기반의 알람 앱 기획/아이디어 챗봇을 만드는 코드입니다.
-
-요청하신 채팅 기록 유지, st.secrets를 통한 API 키 관리, 그리고 예외(오류) 처리 로직을 모두 포함하고 있습니다.
-
-1. app.py (메인 애플리케이션 코드)
-Python
 import streamlit as st
 from google import genai
 from google.genai import types
