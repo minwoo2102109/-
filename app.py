@@ -1,37 +1,102 @@
+
+Gemini와의 대화
+주제는 알람앱이야. (다른 주제로도 바꿔도 됨)
+
+모델은 gemini-2.5-flash-lite 사용
+
+API 키는 secrets로 불러오기
+
+채팅 기록 유지, 오류 처리 포함
+
+app.py랑 requirements.txt 내용 알려줘
+
+Secrets에 넣을 키 형식도 알려줘
+
+Streamlit과 google-genai SDK를 사용하여 Gemini 2.5 Flash Lite 모델 기반의 알람 앱 기획/아이디어 챗봇을 만드는 코드입니다.
+
+요청하신 채팅 기록 유지, st.secrets를 통한 API 키 관리, 그리고 예외(오류) 처리 로직을 모두 포함하고 있습니다.
+
+1. app.py (메인 애플리케이션 코드)
+Python
 import streamlit as st
+from google import genai
+from google.genai import types
+from google.genai.errors import APIError
 
-# 제목
-st.title("🎮 게임 코칭 앱")
+# 1. 페이지 설정 및 제목
+st.set_page_config(page_title="알람 앱 기획 챗봇", page_icon="⏰")
+st.title("⏰ Gemini 알람 앱 챗봇")
+st.caption("Gemini 2.5 Flash Lite 모델을 사용한 AI 아이디어 파트너입니다.")
 
-# 설명
-st.write("플레이 정보를 입력하면 간단한 코칭을 제공합니다.")
+# 2. Streamlit Secrets에서 API 키 불러오기 및 클라이언트 초기화
+try:
+    # secrets.toml에 저장된 API 키 가져오기
+    api_key = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=api_key)
+except KeyError:
+    st.error("Secrets에 'GEMINI_API_KEY'가 설정되지 않았습니다. .streamlit/secrets.toml 파일을 확인해주세요.")
+    st.stop()
+except Exception as e:
+    st.error(f"초기화 중 오류가 발생했습니다: {e}")
+    st.stop()
 
-# 입력
-game = st.text_input("게임 이름")
-tier = st.selectbox(
-    "현재 티어",
-    ["브론즈", "실버", "골드", "플래티넘", "다이아"]
-)
+# 3. 세션 상태(Session State)를 활용한 채팅 기록 초기화
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+    
+    # 챗봇의 역할(페르소나)을 부여하는 시스템 지시어 설정
+    system_instruction = (
+        "당신은 혁신적이고 실용적인 모바일 알람 애플리케이션을 기획하는 전문 기획자입니다. "
+        "사용자가 알람 앱 또는 다른 주제에 대해 질문하면, 창의적인 기능, UI/UX 개선안, "
+        "차별화 전략 등을 친절하고 상세하게 제안해주세요."
+    )
+    
+    # google-genai SDK의 새로운 방식으로 채팅 세션 시작
+    try:
+        st.session_state.chat = client.chats.create(
+            model="gemini-2.5-flash-lite",
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.7,
+            )
+        )
+    except Exception as e:
+        st.error(f"채팅 세션을 생성하는 중 오류가 발생했습니다: {e}")
+        st.stop()
 
-hours = st.slider("하루 연습 시간", 0, 10, 2)
+# 4. 이전 채팅 기록 화면에 출력
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-# 버튼
-if st.button("코칭 받기"):
-
-    st.subheader("📌 코칭 결과")
-
-    if hours < 2:
-        st.success("매일 2시간 이상 꾸준히 연습해보세요.")
-    else:
-        st.success("좋습니다! 리플레이 분석을 추가하면 더 빨리 성장할 수 있습니다.")
-
-    if tier == "브론즈":
-        st.info("기본기와 맵 이해도를 먼저 키우세요.")
-    elif tier == "실버":
-        st.info("에임과 포지셔닝 연습을 추천합니다.")
-    elif tier == "골드":
-        st.info("팀 플레이와 운영 능력을 강화하세요.")
-    else:
-        st.info("상위 티어 전략 분석이 중요합니다.")
-
-    st.write(f"🎯 {game} 코칭 완료!")
+# 5. 사용자 입력 처리
+if user_input := st.chat_input("알람 앱에 대해 궁금한 점이나 아이디어를 입력하세요!"):
+    
+    # 사용자가 입력한 메시지 화면에 표시 및 세션 저장
+    with st.chat_message("user"):
+        st.markdown(user_input)
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    
+    # 6. Gemini API 호출 및 오류 처리
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        message_placeholder.markdown("💡 생각 중...")
+        
+        try:
+            # 채팅 세션을 통해 답변 스트리밍 또는 단발성 메시지 전송
+            # (여기서는 단순 send_message를 사용하되 예외 처리를 강화했습니다)
+            response = st.session_state.chat.send_message(user_input)
+            ai_response = response.text
+            
+            # 화면에 답변 업데이트 및 세션 저장
+            message_placeholder.markdown(ai_response)
+            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+            
+        except APIError as ae:
+            # Gemini API 관련 에러 처리 (인증 실패, 할당량 초과 등)
+            error_msg = f"⚠️ Gemini API 오류가 발생했습니다: {ae.message} (코드: {ae.code})"
+            message_placeholder.markdown(error_msg)
+        except Exception as e:
+            # 기타 일반적인 에러 처리
+            error_msg = f"⚠️ 예상치 못한 오류가 발생했습니다: {str(e)}"
+            message_placeholder.markdown(error_msg
