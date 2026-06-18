@@ -5,11 +5,9 @@ import json
 import urllib.request
 import base64
 
-# 기본 페이지 설정
 st.set_page_config(page_title="세수 알람", page_icon="🧼", layout="centered")
 
 def play_sound(sound_type):
-    """HTML5 오디오를 활용하여 브라우저 강제 효과음 재생"""
     urls = {
         "alarm": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
         "success": "https://actions.google.com/sounds/v1/cheering/applause_yeehaw.ogg",
@@ -22,9 +20,72 @@ def play_sound(sound_type):
         st.components.v1.html(html, height=0)
 
 def verify_wash_face_api(image_bytes):
-    """라이브러리 의존성 없는 순수 HTTP 방식의 Gemini API 요청"""
     if "GEMINI_API_KEY" not in st.secrets:
-        return False, "Secrets 설정에서 API 키를 확인해주세요."
+        return False, "API 키가 없습니다."
     
     api_key = st.secrets["GEMINI_API_KEY"]
-    url = f"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}"
+    base64_image = base64.b64encode(image_bytes).decode('utf-8')
+    
+    prompt = "사진 속 인물이 세수를 완료했거나 잠이 깨서 눈을 똑바로 떴는지 판독하세요. 다른 설명 없이 오직 이 JSON 양식으로만 답변하세요: {\"success\": true 또는 false, \"comment\": \"잔소리 한마디\"}"
+    
+    data = {
+        "contents": [{
+            "parts": [
+                {"text": prompt},
+                {"inlineData": {"mimeType": "image/jpeg", "data": base64_image}}
+            ]
+        }],
+        "generationConfig": {
+            "responseMimeType": "application/json"
+        }
+    }
+    
+    try:
+        req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=15) as response:
+            res_body = json.loads(response.read().decode('utf-8'))
+            text_res = res_body['candidates'][0]['content']['parts'][0]['text']
+            result = json.loads(text_res)
+            return result.get("success", False), result.get("comment", "완료")
+    except Exception:
+        return False, "다시 촬영해 주세요."
+
+if "step" not in st.session_state:
+    st.session_state["step"] = "SETUP"
+if "target" not in st.session_state:
+    st.session_state["target"] = None
+
+st.title("🚨 세수 인증 기상 시스템")
+
+if st.session_state["step"] == "SETUP":
+    st.subheader("⏱️ 알람 시간 설정")
+    t_input = st.time_input("시간 선택", datetime.now().time())
+    is_test = st.checkbox("🔥 5초 뒤 즉시 울리기 (테스트)")
+    
+    if st.button("알람 잠금 및 시작", use_container_width=True):
+        if is_test:
+            st.session_state["target"] = time.time() + 5
+        else:
+            now = datetime.now()
+            tgt = datetime.combine(now.date(), t_input)
+            st.session_state["target"] = tgt.timestamp() if tgt >= now else tgt.timestamp() + 86400
+        st.session_state["step"] = "WAIT"
+        st.rerun()
+
+elif st.session_state["step"] == "WAIT":
+    st.warning("🔒 알람 시스템 작동 중")
+    remains = int(st.session_state["target"] - time.time())
+    if remains > 0:
+        st.metric("알람까지 남은 시간", f"{remains}초")
+        time.sleep(1)
+        st.rerun()
+    else:
+        st.session_state["step"] = "RING"
+        st.rerun()
+
+elif st.session_state["step"] == "RING":
+    play_sound("alarm")
+    st.error("🚨🚨🚨 폭풍 알람 발동!!! 당장 세수하고 오세요!!! 🚨🚨🚨")
+    
+    img = st.camera_input("방금 세
