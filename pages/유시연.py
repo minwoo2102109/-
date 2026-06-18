@@ -1,7 +1,6 @@
 import streamlit as st
 import time
 from datetime import datetime
-import base64
 from google import genai
 from google.genai import types
 from google.genai.errors import APIError
@@ -35,7 +34,7 @@ def verify_wash_face(image_bytes):
         return False, "API 키 누락"
     
     try:
-        # 2026년 최신 google-genai SDK 스타일 적용
+        # 2026년 최신 google-genai SDK 적용
         client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
         
         prompt = """
@@ -109,50 +108,5 @@ if st.session_state.alarm_state == "ready":
 elif st.session_state.alarm_state == "waiting":
     st.info("⏳ 시스템 가동 중... 지정된 시간이 되면 미션이 시작됩니다.")
     
-    # 남은 시간 표시
-    remaining = int(st.session_state.target_time - time.time())
-    if remaining > 0:
-        st.metric(label="미션 발생까지 남은 시간", value=f"{remaining}초")
-        time.sleep(1)
-        st.rerun()
-    else:
-        st.session_state.alarm_state = "ringing"
-        st.rerun()
-
-# 3단계: 알람 울림 & 미션 수행 (Ringing)
-elif st.session_state.alarm_state == "ringing":
-    st.error("🚨🚨🚨 삐비빅! 기상! 기상! 당장 세수하고 오세요! 🚨🚨🚨")
-    play_sound("alarm") # 알람 소리 무한 루프 시작
-    
-    st.subheader("🧼 미션: 세수한 얼굴 인증하기")
-    st.write("카메라를 켜고 방금 세수해서 물기가 남아있거나 눈을 번쩍 뜬 얼굴을 찍으세요!")
-    
-    # 웹캠 입력 받기
-    img_file = st.camera_input("찰칵! 잠 깨기 인증샷")
-    
-    if img_file is not None:
-        with st.spinner("AI 감독관이 눈곱과 물기를 확인하는 중..."):
-            bytes_data = img_file.getvalue()
-            success, comment = verify_wash_face(bytes_data)
-            
-            st.markdown(f"#### 🤖 AI 감독관의 평가:")
-            if success:
-                st.success(f"🟢 성공!! {comment}")
-                play_sound("success")
-                st.session_state.alarm_state = "clear"
-                time.sleep(2) # 효과음 들을 시간 확보
-                st.rerun()
-            else:
-                st.error(f"🔴 실패!! {comment}")
-                play_sound("fail")
-                st.info("다시 세수하고 오거나 눈을 크게 뜨고 다시 찍으세요!")
-
-# 4단계: 알람 해제 완료 (Clear)
-elif st.session_state.alarm_state == "clear":
-    st.balloons()
-    st.success("🎉 완벽합니다! 성공적으로 기상하셨습니다. 활기찬 하루 되세요!")
-    
-    if st.button("🔄 처음으로 돌아가기", use_container_width=True):
-        st.session_state.alarm_state = "ready"
-        st.session_state.target_time = None
-        st.rerun()
+    # 끊김 현상 없도록 깔끔하게 처리된 타이머 구문
+    remaining = int(st.session_state.
