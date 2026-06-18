@@ -6,9 +6,6 @@ import random
 # 1. 페이지 설정
 st.set_page_config(page_title="WAKE-UP EFFICACY CENTER", page_icon="🚨", layout="centered")
 
-# 실효성을 증명하는 데이터 대시보드 그래픽 URL
-EFFICACY_URL = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80"
-
 # 디자인 스타일 적용
 st.markdown("""
     <style>
@@ -17,28 +14,25 @@ st.markdown("""
     .warning-banner {
         background: linear-gradient(45deg, #330000, #110000);
         border: 2px solid #ff3333; padding: 20px; border-radius: 15px; text-align: center;
+        margin-bottom: 20px;
     }
     .intro-box {
-        background-color: #16161a; border-left: 5px solid #ff3333; padding: 15px; border-radius: 5px; margin-top: 10px;
+        background-color: #16161a; border-left: 5px solid #ff3333; padding: 25px; border-radius: 10px; margin-top: 15px; margin-bottom: 15px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. 메인 실효성 리포트 비주얼
-st.image(EFFICACY_URL, caption="[LAB REPORT] 앱 사용 후 뇌 활성도 및 기상 성공률 변화", use_container_width=True)
+# 2. 타이틀 및 상태 배너
 st.title("🚨 WAKE-UP CONTROL CENTER")
 
-# 3. 실시간 시스템 상태
 st.markdown("""
     <div class="warning-banner">
-        <h3 style="color: #ff3333; margin: 0;">⚠️ ALARM STATUS: ENFORCED</h3>
-        <p style="color: #ffffff; margin: 5px 0 0 0;">지옥의 알람이 당신의 아침을 대기 중입니다.</p>
+        <h3 style="color: #ff3333; margin: 0; font-weight: 900;">⚠️ ALARM STATUS: ENFORCED</h3>
+        <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 14px;">지옥의 알람이 당신의 아침을 대기 중입니다.</p>
     </div>
 """, unsafe_allow_html=True)
 
-st.divider()
-
-# 4. [신규 추가] 앱 관련 간단 소개 토글 버튼
+# 3. 앱 관련 간단 소개 토글 버튼
 if 'show_app_intro' not in st.session_state:
     st.session_state.show_app_intro = False
 
@@ -48,30 +42,30 @@ if st.button("📱 이 앱은 무엇인가요? (간단 소개 보기)", use_cont
 if st.session_state.show_app_intro:
     st.markdown("""
     <div class="intro-box">
-        <h4 style="color: #ff3333; margin-top: 0;">😈 잠결 무의식을 파괴하는 강제 기상 앱</h4>
+        <h4 style="color: #ff3333; margin-top: 0; font-weight: bold;">😈 잠결 무의식을 파괴하는 강제 기상 시스템</h4>
         <p style="font-size: 14px; color: #cccccc; line-height: 1.6; margin-bottom: 0;">
             매일 아침 적응할 수 없는 <b>무작위 소음</b>이 울리며, 잠결에 터치 한 번으로 알람을 끄는 행위를 방지하기 위해 
             <b>버튼 위치와 슬라이더가 매번 무작위로 셔플</b>됩니다. 마지막으로 화장실로 직접 걸어가 
-            <b>세수한 얼굴을 카메라로 인증</b>해야만 비로소 알람이 종료되는 무자비한 시스템입니다.
+            <b>세수한 얼굴을 카메라로 인증</b>해야만 비로소 알람이 종료되는 무자비한 기상 유도 앱입니다.
         </p>
     </div>
     """, unsafe_allow_html=True)
 
 st.divider()
 
-# 5. 실효성 증명 데이터
-st.subheader("📊 지옥의 알람 실효성 데이터")
+# 4. 실효성 증명 데이터 대시보드
+st.markdown("### 📊 기상 실효성 보고서 (Wake-up Efficacy Report)")
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric(label="평균 기상 성공률", value="98.2%", delta="35% 상승")
+    st.metric(label="🧠 뇌 활성화 지수", value="92%", delta="▲ 15% 전일 대비")
 with col2:
-    st.metric(label="뇌 활성 도달 시간", value="45초", delta="-320초")
+    st.metric(label="🧩 평균 미션 해결 시간", value="1분 30초", delta="슬라이더 & 셔플")
 with col3:
-    st.metric(label="재취침 방지율", value="100%", delta="완전 차단")
+    st.metric(label="💧 세수 인증 성공률", value="98%", delta="카메라 미션 완료")
 
 st.divider()
 
-# --- 6. 알람 시뮬레이션 및 미션 로직 ---
+# --- 5. 알람 시뮬레이션 및 미션 로직 ---
 if 'alarm_triggered' not in st.session_state: st.session_state.alarm_triggered = False
 if 'mission_step' not in st.session_state: st.session_state.mission_step = 1
 if 'target_slide' not in st.session_state: st.session_state.target_slide = random.randint(60, 95)
