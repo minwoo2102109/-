@@ -64,4 +64,11 @@ def verify_wash_face_api(image_bytes):
         with urllib.request.urlopen(req, timeout=15) as response:
             res_body = json.loads(response.read().decode('utf-8'))
             text_res = res_body['candidates'][0]['content']['parts'][0]['text']
-            result = json
+            result = json.loads(text_res)
+            return result.get("success", False), result.get("comment", "인증 완료")
+    except Exception as e:
+        return False, "얼굴을 인식하지 못했습니다. 눈을 크게 뜨고 밝은 곳에서 다시 찍으세요!"
+
+# --- 앱 상태 관리 (간결화) ---
+if "step" not in st.session_state:
+    st.session_state.
