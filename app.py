@@ -10,7 +10,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# 커스텀 스타일 적용 (어두운 블랙 & 테크니컬 레드 조합으로 관제 센터 느낌 강조)
+# 커스텀 스타일 적용 (어두운 블랙 & 테크니컬 레드 조합)
 st.markdown("""
     <style>
     .main {
@@ -75,7 +75,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 4. 앱 정체성 키워드 소개 (SyntaxError 방지를 위해 마크다운 형식으로 안전하게 수정)
+# 4. 앱 정체성 키워드 소개 (Syntax Error 절대 안 나게 한 줄씩 안전하게 배치)
 if 'show_intro' not in st.session_state:
     st.session_state.show_intro = False
 
@@ -83,4 +83,19 @@ if st.button("📱 이 시스템의 절대 탈출 불가능 메커니즘 보기"
     st.session_state.show_intro = not st.session_state.show_intro
 
 if st.session_state.show_intro:
-    st.markdown("### 🛑 잠
+    st.markdown("### 🛑 잠결 뇌세포를 강제로 깨우는 3단계 장치")
+    st.write("⚡ **예측 불허 무작위 소음**: 매일 아침 칠판 긁는 소리, 실제 전원 대피령 등 상상하지도 못한 괴기한 소리가 무작위로 울려 뇌가 소음에 적응할 틈을 주지 않습니다.")
+    st.write("🎮 **랜덤 UI 셔플 게임**: 잠결에 무의식적으로 알람을 터치해 끄는 것을 막기 위해, 해제 버튼의 위치와 슬라이더의 목표값이 매번 게임처럼 무작위로 변경됩니다.")
+    st.write("🌊 **최종 세수 카메라 인증**: 침대에서 완전히 벗어나 화장실로 이동한 뒤, 물기 촉촉한 얼굴이나 욕실을 카메라로 직접 촬영해 인증해야 비로소 지옥의 알람이 종료됩니다.")
+
+st.divider()
+
+# 5. 나의 기상 기록 통계
+st.subheader("📊 지옥 탈출 실시간 리포트")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric(label="이번 주 기상 성공률", value="92%", delta="▲ 4%")
+with col2:
+    st.metric(label="평균 탈출 소요 시간", value="1분 24초", delta="-18초 (단축)", delta_color="inverse")
+with col3:
+    st.metric
