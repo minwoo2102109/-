@@ -4,109 +4,94 @@ from datetime import datetime
 from google import genai
 from google.genai import types
 from google.genai.errors import APIError
+import random
 
-# 페이지 기본 설정
-st.set_page_config(page_title="모닝 미션! 잠깨기 대작전", page_icon="⏰", layout="centered")
+# 페이지 레이아웃 및 테마 설정
+st.set_page_config(page_title="폭풍 기상 알람", page_icon="🚨", layout="centered")
 
-# --- 효과음 재생 함수 (HTML5 Audio 활용) ---
+# --- 🔊 엄청난 소리 무한 재생 및 효과음 함수 ---
 def play_sound(sound_type):
-    """Streamlit에서 오디오를 자동 재생하기 위한 HTML 베이스64 오디오 태그 삽입"""
+    """HTML5 오디오를 사용해 절대 꺼지지 않는 강력한 사이렌과 소리 효과 제공"""
+    # 더 자극적이고 엄청난 사이렌 소리 주소로 배치
     sound_urls = {
-        "alarm": "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
-        "success": "https://actions.google.com/sounds/v1/cartoon/slide_whistle_up.ogg",
-        "fail": "https://actions.google.com/sounds/v1/cartoon/boing.ogg"
+        "alarm": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
+        "success": "https://actions.google.com/sounds/v1/cheering/applause_yeehaw.ogg",
+        "fail": "https://actions.google.com/sounds/v1/cartoon/slide_whistle_down.ogg"
     }
     url = sound_urls.get(sound_type)
     if url:
         loop_attr = "loop" if sound_type == "alarm" else ""
-        audio_html = f"""
-            <audio autoplay {loop_attr} style="display:none;">
-                <source src="{url}" type="audio/ogg">
-            </audio>
-        """
+        audio_html = f'<audio autoplay {loop_attr} style="display:none;"><source src="{url}" type="audio/ogg"></audio>'
         st.components.v1.html(audio_html, height=0)
 
-# --- Gemini AI 세수 인증 함수 ---
+# --- 🤖 Gemini 세수 판독 AI ---
 def verify_wash_face(image_bytes):
-    """Gemini 2.5 Flash Lite를 사용하여 세수 여부 판독"""
     if "GEMINI_API_KEY" not in st.secrets:
-        st.error("🔒 Secrets에 GEMINI_API_KEY가 설정되지 않았습니다.")
-        return False, "API 키 누락"
-    
+        return False, "Streamlit Secrets에 GEMINI_API_KEY를 등록해주세요!"
     try:
-        # 2026년 최신 google-genai SDK 적용
         client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-        
         prompt = """
         당신은 잠을 깨우는 엄격한 알람 요정입니다. 
-        제공된 사진의 인물이 '세수를 방금 마친 얼굴'이거나 '잠이 완전히 깨서 눈을 똑바로 뜬 얼굴'인지 판독해주세요.
-        
-        응답은 반드시 아래의 JSON 형식으로만 하세요. 다른 말은 절대 하지 마세요:
-        {
-          "success": true 또는 false (세수했거나 잠이 깼으면 true, 여전히 졸려보이거나 빈 사진이거나 대충 찍었으면 false),
-          "comment": "사용자에게 한마디 (위트 있고 장난스러운 잔소리 톤, 2문장 이내)"
-        }
+        사진의 인물이 '세수를 마친 촉촉한 얼굴'이거나 '잠이 깨서 눈을 크게 뜬 얼굴'인지 판독하세요.
+        반드시 다음 JSON 형식으로만 답하세요:
+        {"success": true 또는 false, "comment": "위트있는 잔소리 1문장"}
         """
-        
         response = client.models.generate_content(
             model='gemini-2.5-flash-lite',
-            contents=[
-                types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-                prompt
-            ],
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json"
-            )
+            contents=[types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"), prompt],
+            config=types.GenerateContentConfig(response_mime_type="application/json")
         )
-        
-        # 결과 파싱
         import json
         result = json.loads(response.text)
-        return result.get("success", False), result.get("comment", "분석 실패")
-        
-    except APIError as e:
-        return False, f"AI 연결 오류가 발생했습니다: {str(e)}"
+        return result.get("success", False), result.get("comment", "판독 불가")
     except Exception as e:
-        return False, f"오류 발생: {str(e)}"
+        return False, f"AI 오류 발생: {str(e)}"
 
-# --- 앱 상태 관리 (Session State) ---
-if "alarm_state" not in st.session_state:
-    st.session_state.alarm_state = "ready"  # ready, waiting, ringing, clear
+# --- 🎮 세션 상태 초기화 ---
+if "state" not in st.session_state:
+    st.session_state.state = "SETUP"  # SETUP -> WAITING -> RINGING -> CLEAR
 if "target_time" not in st.session_state:
     st.session_state.target_time = None
+if "math_num1" not in st.session_state:
+    st.session_state.math_num1 = random.randint(11, 99)
+    st.session_state.math_num2 = random.randint(11, 99)
 
-# --- UI 레이아웃 ---
-st.title("⏰ 모닝 미션! 잠깨기 대작전")
-st.caption("세수하고 촉촉한 얼굴을 인증하기 전까진 절대 꺼지지 않는 알람!")
+# --- 📱 화면 구성 ---
+st.title("🚨 잠 깨! 폭풍 기상 알람 미니게임")
 
-# 1단계: 알람 설정 (Ready)
-if st.session_state.alarm_state == "ready":
-    st.subheader("🎯 1단계: 알람 설정하기")
+# [1단계] 세팅 화면
+if st.session_state.state == "SETUP":
+    st.subheader("⏱️ 알람 시간 예약")
+    alarm_time = st.time_input("알람이 울릴 시간 설정", datetime.now().time())
+    test_mode = st.checkbox("🔥 즉시 테스트 모드 (5초 뒤 작동)")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        alarm_time = st.time_input("알람 울릴 시간 선택", datetime.now().time())
-    with col2:
-        test_mode = st.checkbox("🔥 5초 뒤 바로 울리기 (테스트용)")
-
-    if st.button("🚀 알람 기상 모드 가동!", use_container_width=True):
+    if st.button("⏰ 알람 가동 (이제 못 도망칩니다)", use_container_width=True):
         if test_mode:
             st.session_state.target_time = time.time() + 5
         else:
             now = datetime.now()
             target = datetime.combine(now.date(), alarm_time)
             if target < now:
-                st.warning("이미 지나간 시간입니다! 내일 시간으로 설정됩니다.")
                 st.session_state.target_time = target.timestamp() + 86400
             else:
                 st.session_state.target_time = target.timestamp()
-                
-        st.session_state.alarm_state = "waiting"
+        st.session_state.state = "WAITING"
         st.rerun()
 
-# 2단계: 알람 대기중 (Waiting)
-elif st.session_state.alarm_state == "waiting":
-    st.info("⏳ 시스템 가동 중... 지정된 시간이 되면 미션이 시작됩니다.")
+# [2단계] 대기 화면
+elif st.session_state.state == "WAITING":
+    st.warning("🔒 알람이 세팅되었습니다. 지정된 시간에 폭풍 소리가 울립니다.")
+    remains = int(st.session_state.target_time - time.time())
     
-    # 끊김 현상 없도록 깔끔하게 처리된 타이머 구문
-    remaining = int(st.session_state.
+    if remains > 0:
+        st.metric("알람 발동까지 남은 시간", f"{remains}초")
+        time.sleep(1)
+        st.rerun()
+    else:
+        st.session_state.state = "RINGING"
+        st.rerun()
+
+# [3단계] 알람 발생 및 미니게임 미션
+elif st.session_state.state == "RINGING":
+    play_sound("alarm")  # 엄청난 사이렌 무한 반복 시작
+    st.error("📢🚨🔥
