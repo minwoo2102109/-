@@ -44,7 +44,6 @@ st.markdown("""
         font-size: 15px;
         margin-bottom: 25px;
     }
-    /* 경고 배너 애니메이션 효과 */
     .warning-banner {
         background: linear-gradient(45deg, #220000, #440000);
         border: 2px solid #ff3333;
@@ -66,7 +65,7 @@ st.markdown("""
 st.markdown("<p class='logo-text'>🚨 WAKE-UP CONTROL CENTER</p>", unsafe_allow_html=True)
 st.markdown("<p class='sub-text'>악마의 무작위 기상 시스템 메인 관제 탑</p>", unsafe_allow_html=True)
 
-# 3. 실시간 시스템 감시 상태 배너 (기상 예약 창 대신 들어간 메인 비주얼)
+# 3. 실시간 시스템 감시 상태 배너
 st.markdown("""
     <div class="warning-banner">
         <h2 style="color: #ff3333; margin: 0; font-weight: 900;">⚠️ ALARM STATUS: ENFORCED</h2>
@@ -76,7 +75,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 4. 앱 정체성 키워드 소개 (버튼 토글)
+# 4. 앱 정체성 키워드 소개 (SyntaxError 방지를 위해 마크다운 형식으로 안전하게 수정)
 if 'show_intro' not in st.session_state:
     st.session_state.show_intro = False
 
@@ -84,7 +83,4 @@ if st.button("📱 이 시스템의 절대 탈출 불가능 메커니즘 보기"
     st.session_state.show_intro = not st.session_state.show_intro
 
 if st.session_state.show_intro:
-    st.info("""
-    ### 🛑 잠결 뇌세포를 강제로 깨우는 3단계 장치
-    
-    * **⚡ 예측 불허 무작위 소음**: 매일 아침 칠판 긁는 소리, 실제 전원 대피령 등 상상하지도 못한 괴기한 소리가 무작위로 울려 뇌가 소음에 적응할 틈을 주지 않습니다.
+    st.markdown("### 🛑 잠
