@@ -5,8 +5,10 @@ import json
 import urllib.request
 import base64
 
+# 1. 페이지 기본 설정
 st.set_page_config(page_title="세수 알람", page_icon="🧼", layout="centered")
 
+# 2. 알람 및 효과음 재생 함수
 def play_sound(sound_type):
     urls = {
         "alarm": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
@@ -19,6 +21,7 @@ def play_sound(sound_type):
         html = f'<audio autoplay {loop} style="display:none;"><source src="{url}" type="audio/ogg"></audio>'
         st.components.v1.html(html, height=0)
 
+# 3. Gemini API 활용 세수 및 잠 깨어남 판독 함수
 def verify_wash_face_api(image_bytes):
     if "GEMINI_API_KEY" not in st.secrets:
         return False, "API 키가 없습니다."
@@ -27,7 +30,7 @@ def verify_wash_face_api(image_bytes):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={api_key}"
     base64_image = base64.b64encode(image_bytes).decode('utf-8')
     
-    prompt = "사진 속 인물이 세수를 완료했거나 잠이 깨서 눈을 똑바로 떴는지 판독하세요. 다른 설명 없이 오직 이 JSON 양식으로만 답변하세요: {\"success\": true 또는 false, \"comment\": \"잔소리 한마디\"}"
+    prompt = "사진 속 인물이 세수를 완료했거나 잠이 깨서 눈을 똑바로 떴인지 판독하세요. 다른 설명 없이 오직 이 JSON 양식으로만 답변하세요: {\"success\": true 또는 false, \"comment\": \"잔소리 한마디\"}"
     
     data = {
         "contents": [{
@@ -51,13 +54,19 @@ def verify_wash_face_api(image_bytes):
     except Exception:
         return False, "다시 촬영해 주세요."
 
+# 4. 세션 상태(Session State) 초기화
 if "step" not in st.session_state:
     st.session_state["step"] = "SETUP"
 if "target" not in st.session_state:
     st.session_state["target"] = None
+if "comment" not in st.session_state:
+    st.session_state["comment"] = ""
 
 st.title("🚨 세수 인증 기상 시스템")
 
+# --- 단계별 화면 구현 ---
+
+# [1 단계] 알람 예약 화면
 if st.session_state["step"] == "SETUP":
     st.subheader("⏱️ 알람 시간 설정")
     t_input = st.time_input("시간 선택", datetime.now().time())
@@ -69,23 +78,4 @@ if st.session_state["step"] == "SETUP":
         else:
             now = datetime.now()
             tgt = datetime.combine(now.date(), t_input)
-            st.session_state["target"] = tgt.timestamp() if tgt >= now else tgt.timestamp() + 86400
-        st.session_state["step"] = "WAIT"
-        st.rerun()
-
-elif st.session_state["step"] == "WAIT":
-    st.warning("🔒 알람 시스템 작동 중")
-    remains = int(st.session_state["target"] - time.time())
-    if remains > 0:
-        st.metric("알람까지 남은 시간", f"{remains}초")
-        time.sleep(1)
-        st.rerun()
-    else:
-        st.session_state["step"] = "RING"
-        st.rerun()
-
-elif st.session_state["step"] == "RING":
-    play_sound("alarm")
-    st.error("🚨🚨🚨 폭풍 알람 발동!!! 당장 세수하고 오세요!!! 🚨🚨🚨")
-    
-    img = st.camera_input("방금 세
+            st.session_state["target"] = tgt.timestamp()
