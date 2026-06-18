@@ -1,205 +1,240 @@
 import streamlit as st
-from datetime import datetime
+import datetime
 import time
+import random
 import cv2
 import numpy as np
+from PIL import Image
 
 st.set_page_config(
-    page_title="Wake & Wash",
+    page_title="Wake Quest",
     page_icon="⏰",
-    layout="wide"
+    layout="centered"
 )
 
-# -----------------------------
-# CSS
-# -----------------------------
-st.markdown("""
-<style>
-.main {
-    background: linear-gradient(135deg,#87CEFA,#ffffff);
-}
+# -------------------------
+# 상태 초기화
+# -------------------------
 
-.title {
-    text-align:center;
-    font-size:50px;
-    font-weight:bold;
-    color:#0F4C81;
-}
-
-.subtitle{
-    text-align:center;
-    font-size:22px;
-    color:#444;
-}
-
-.alarm-box{
-    background:#ff4b4b;
-    padding:20px;
-    border-radius:20px;
-    text-align:center;
-    color:white;
-    font-size:30px;
-    font-weight:bold;
-    animation: blink 1s infinite;
-}
-
-.success-box{
-    background:#00c853;
-    padding:20px;
-    border-radius:20px;
-    text-align:center;
-    color:white;
-    font-size:30px;
-    font-weight:bold;
-}
-
-@keyframes blink{
-    50%{
-        opacity:0.4;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
-# -----------------------------
-# Session State
-# -----------------------------
-if "alarm_active" not in st.session_state:
-    st.session_state.alarm_active = False
+if "alarm_set" not in st.session_state:
+    st.session_state.alarm_set = False
 
 if "alarm_triggered" not in st.session_state:
     st.session_state.alarm_triggered = False
 
-# -----------------------------
-# Header
-# -----------------------------
-st.markdown(
-    '<div class="title">⏰ Wake & Wash 🚿</div>',
-    unsafe_allow_html=True
-)
+if "face_verified" not in st.session_state:
+    st.session_state.face_verified = False
 
-st.markdown(
-    '<div class="subtitle">세수한 얼굴 인증 후에만 알람 종료 가능</div>',
-    unsafe_allow_html=True
-)
+if "game_passed" not in st.session_state:
+    st.session_state.game_passed = False
 
-st.divider()
+if "target_time" not in st.session_state:
+    st.session_state.target_time = None
 
-# -----------------------------
-# Current Time
-# -----------------------------
-now = datetime.now()
+if "game_number" not in st.session_state:
+    st.session_state.game_number = random.randint(100, 999)
 
-st.metric(
-    "현재 시각",
-    now.strftime("%H:%M:%S")
-)
+# -------------------------
+# 효과음
+# -------------------------
 
-# -----------------------------
-# Alarm Setting
-# -----------------------------
-alarm_time = st.time_input(
-    "알람 시간 설정",
-    value=datetime.now().time()
-)
+def play_alarm():
+    st.markdown("""
+    <audio autoplay loop>
+      <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" type="audio/mpeg">
+    </audio>
+    """, unsafe_allow_html=True)
 
-if st.button("알람 시작"):
-    st.session_state.alarm_active = True
-    st.success("알람이 활성화되었습니다.")
+def play_success():
+    st.markdown("""
+    <audio autoplay>
+      <source src="https://www.soundjay.com/buttons/sounds/button-3.mp3" type="audio/mpeg">
+    </audio>
+    """, unsafe_allow_html=True)
 
-# -----------------------------
-# Alarm Check
-# -----------------------------
-if st.session_state.alarm_active:
+# -------------------------
+# 얼굴 인증
+# -------------------------
 
-    current_time = datetime.now().strftime("%H:%M")
-    target_time = alarm_time.strftime("%H:%M")
+def detect_face(image):
+    try:
+        img = np.array(image)
 
-    st.info(f"설정된 알람: {target_time}")
+        if len(img.shape) == 3:
+            gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        else:
+            gray = img
 
-    if current_time >= target_time:
+        face_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades +
+            "haarcascade_frontalface_default.xml"
+        )
+
+        faces = face_cascade.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5
+        )
+
+        return len(faces) > 0
+
+    except Exception:
+        return False
+
+# -------------------------
+# UI
+# -------------------------
+
+st.title("⏰ Wake Quest")
+st.subheader("얼굴 인증 + 미니게임으로 알람 해제")
+
+# -------------------------
+# 알람 설정
+# -------------------------
+
+if not st.session_state.alarm_set:
+
+    alarm_time = st.time_input(
+        "알람 시간 설정",
+        value=datetime.time(7, 0)
+    )
+
+    if st.button("알람 시작"):
+        st.session_state.target_time = alarm_time
+        st.session_state.alarm_set = True
+        st.success("알람이 설정되었습니다.")
+        st.rerun()
+
+# -------------------------
+# 알람 대기
+# -------------------------
+
+elif (
+    st.session_state.alarm_set
+    and not st.session_state.alarm_triggered
+):
+
+    now = datetime.datetime.now().time()
+
+    st.info(
+        f"설정 시간 : {st.session_state.target_time}"
+    )
+
+    st.write(
+        f"현재 시간 : {now.strftime('%H:%M:%S')}"
+    )
+
+    if (
+        now.hour == st.session_state.target_time.hour
+        and now.minute == st.session_state.target_time.minute
+    ):
         st.session_state.alarm_triggered = True
+        st.rerun()
 
-# -----------------------------
-# Alarm Trigger
-# -----------------------------
-if st.session_state.alarm_triggered:
+    st.caption("시간 확인을 위해 새로고침(F5) 해주세요.")
 
-    st.markdown(
-        """
-        <div class="alarm-box">
-        🚨 기상 시간입니다! 🚨<br>
-        얼굴 인증 전까지 알람이 계속 울립니다.
-        </div>
-        """,
-        unsafe_allow_html=True
+# -------------------------
+# 알람 울림
+# -------------------------
+
+elif (
+    st.session_state.alarm_triggered
+    and not st.session_state.face_verified
+):
+
+    play_alarm()
+
+    st.error("🚨 기상 미션 시작!")
+    st.markdown("### 세수 후 얼굴을 촬영하세요")
+
+    photo = st.camera_input(
+        "얼굴 인증"
     )
 
-    # 큰 알람음
-    st.audio(
-        "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
-        autoplay=True
-    )
-
-    st.subheader("📸 세수 후 얼굴 사진 촬영")
-
-    picture = st.camera_input(
-        "얼굴을 촬영하세요"
-    )
-
-    if picture is not None:
+    if photo is not None:
 
         try:
-            file_bytes = np.asarray(
-                bytearray(picture.read()),
-                dtype=np.uint8
-            )
+            image = Image.open(photo)
 
-            image = cv2.imdecode(
-                file_bytes,
-                cv2.IMREAD_COLOR
-            )
+            if detect_face(image):
 
-            gray = cv2.cvtColor(
-                image,
-                cv2.COLOR_BGR2GRAY
-            )
+                st.session_state.face_verified = True
+                play_success()
 
-            face_cascade = cv2.CascadeClassifier(
-                cv2.data.haarcascades +
-                "haarcascade_frontalface_default.xml"
-            )
-
-            faces = face_cascade.detectMultiScale(
-                gray,
-                1.1,
-                4
-            )
-
-            if len(faces) > 0:
-
-                st.markdown(
-                    """
-                    <div class="success-box">
-                    ✅ 얼굴 인증 성공!
-                    <br>
-                    좋은 아침입니다 ☀️
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                st.balloons()
-
-                st.session_state.alarm_triggered = False
-                st.session_state.alarm_active = False
+                st.success("얼굴 인증 성공!")
+                st.rerun()
 
             else:
-                st.error(
-                    "얼굴이 인식되지 않았습니다. 다시 촬영해주세요."
+                st.warning(
+                    "얼굴이 감지되지 않았습니다."
                 )
 
         except Exception as e:
             st.error(
-                f"이미지 처리 오류: {str(e)}"
+                f"이미지 처리 오류: {e}"
             )
+
+# -------------------------
+# 미니게임
+# -------------------------
+
+elif (
+    st.session_state.face_verified
+    and not st.session_state.game_passed
+):
+
+    st.success("얼굴 인증 완료")
+
+    st.markdown("## 🎮 숫자 기억하기")
+
+    st.info(
+        f"이 숫자를 기억하세요: {st.session_state.game_number}"
+    )
+
+    st.write("5초 후 입력하세요.")
+
+    time.sleep(5)
+
+    st.markdown("---")
+
+    answer = st.text_input(
+        "숫자를 입력하세요"
+    )
+
+    if st.button("제출"):
+
+        if answer == str(st.session_state.game_number):
+
+            st.session_state.game_passed = True
+            play_success()
+            st.rerun()
+
+        else:
+            st.error("틀렸습니다!")
+
+# -------------------------
+# 성공
+# -------------------------
+
+elif st.session_state.game_passed:
+
+    st.balloons()
+
+    st.success(
+        "🎉 기상 퀘스트 완료!"
+    )
+
+    st.markdown("""
+    # ☀️ 좋은 아침입니다!
+    알람이 해제되었습니다.
+    """)
+
+    if st.button("다시 시작"):
+
+        st.session_state.alarm_set = False
+        st.session_state.alarm_triggered = False
+        st.session_state.face_verified = False
+        st.session_state.game_passed = False
+        st.session_state.game_number = random.randint(100, 999)
+
+        st.rerun()
